@@ -11,8 +11,14 @@ function setup() {
   // 隱藏原始的 HTML 視訊元件，避免在畫布下方重複顯示
   capture.hide();
 
-  // 產生一個與顯示視訊畫面寬高一樣的繪圖層 (畫布寬高的 60%)
-  pg = createGraphics(windowWidth * 0.6, windowHeight * 0.6);
+  // 1. 初始化尺寸：計算手機比例 (9:16) 的尺寸，確保符合畫布 60-70% 的限制
+  let vH = windowHeight * 0.7;
+  let vW = vH * (9 / 16);
+  if (vW > windowWidth * 0.6) {
+    vW = windowWidth * 0.6;
+    vH = vW * (16 / 9);
+  }
+  pg = createGraphics(vW, vH);
 
   // 初始化泡泡數據
   for (let i = 0; i < 40; i++) {
@@ -29,9 +35,14 @@ function draw() {
   // 3. 設定畫布背景顏色為 e7c6ff
   background('#e7c6ff');
 
-  // 4. 計算影像顯示的大小 (畫布寬高的 60%)
-  let vW = width * 0.6;
-  let vH = height * 0.6;
+  // 4. 即時計算影像顯示的大小 (維持手機比例 9:16)
+  let vH = height * 0.7;
+  let vW = vH * (9 / 16);
+  if (vW > width * 0.6) {
+    vW = width * 0.6;
+    vH = vW * (16 / 9);
+  }
+
   let x = (width - vW) / 2;
   let y = (height - vH) / 2;
 
@@ -40,19 +51,50 @@ function draw() {
   translate(width, 0); // 將座標原點移至畫布右側
   scale(-1, 1);        // 水平翻轉座標系 (x 軸變為反向)
   
-  // 繪製影像。因為座標系已翻轉，原本的居中計算依然適用
-  image(capture, x, y, vW, vH);
+  // 為了不讓影像在直向手機比例下變形，計算攝像頭來源的裁剪範圍 (sx, sy, sw, sh)
+  let cw = capture.width;
+  let ch = capture.height;
+  let videoRatio = cw / ch;
+  let targetRatio = vW / vH;
+  let sx, sy, sw, sh;
+
+  if (videoRatio > targetRatio) {
+    sw = ch * targetRatio;
+    sh = ch;
+    sx = (cw - sw) / 2;
+    sy = 0;
+  } else {
+    sw = cw;
+    sh = cw / targetRatio;
+    sx = 0;
+    sy = (ch - sh) / 2;
+  }
+
+  // 繪製裁剪後的影像到計算好的置中位置
+  image(capture, x, y, vW, vH, sx, sy, sw, sh);
   pop();  // 還原繪圖狀態，避免影響到其他可能要繪製的圖形
 
   // 在繪圖層 (pg) 上繪製內容 (範例：畫出一個紅色外框與文字)
   pg.clear(); // 確保背景透明，只顯示畫上去的內容
 
   // 繪製並更新泡泡效果
-  pg.noFill();
-  pg.stroke(255, 255, 255, 180); // 白色半透明
-  pg.strokeWeight(1.5);
   for (let b of bubbles) {
+    // 1. 泡泡球體主體：淡白色填充增加玻璃通透感
+    pg.fill(255, 255, 255, 40);
+    pg.stroke(255, 255, 255, 120);
+    pg.strokeWeight(0.5);
     pg.circle(b.x, b.y, b.r * 2);
+
+    // 2. 玻璃高光 (Specular Highlight)：在左上方繪製一個微型橢圓，模擬光源反射
+    pg.noStroke();
+    pg.fill(255, 255, 255, 220);
+    pg.ellipse(b.x - b.r * 0.4, b.y - b.r * 0.4, b.r * 0.6, b.r * 0.4);
+
+    // 3. 底部微弱反光：增加球體的立體厚度感
+    pg.fill(255, 255, 255, 60);
+    pg.ellipse(b.x + b.r * 0.3, b.y + b.r * 0.3, b.r * 0.4, b.r * 0.4);
+
+    // 更新物理運動
     b.y -= b.speed; // 向上飄動
     // 加入一點左右隨機晃動的感感
     b.x += sin(frameCount * 0.05 + b.r) * 0.5;
@@ -64,15 +106,6 @@ function draw() {
     }
   }
 
-  pg.stroke(255, 0, 0);
-  pg.strokeWeight(5);
-  pg.noFill();
-  pg.rect(0, 0, pg.width, pg.height); // 在繪圖層邊緣畫框
-  pg.fill(255, 0, 0);
-  pg.noStroke();
-  pg.textAlign(CENTER, CENTER);
-  pg.text("這是建立的 Graphics 內容", pg.width / 2, pg.height / 2);
-
   // 將此繪圖層顯示在視訊畫面的上方 (疊加在畫布中間)
   image(pg, x, y, vW, vH);
 }
@@ -80,6 +113,12 @@ function draw() {
 function windowResized() {
   // 確保視窗大小改變時，畫布依然保持全螢幕
   resizeCanvas(windowWidth, windowHeight);
-  // 同步更新繪圖層的大小，確保始終與視訊顯示尺寸一致
-  pg.resizeCanvas(windowWidth * 0.6, windowHeight * 0.6);
+  // 同步更新繪圖層的大小，重新維持手機比例
+  let vH = windowHeight * 0.7;
+  let vW = vH * (9 / 16);
+  if (vW > windowWidth * 0.6) {
+    vW = windowWidth * 0.6;
+    vH = vW * (16 / 9);
+  }
+  pg.resizeCanvas(vW, vH);
 }
