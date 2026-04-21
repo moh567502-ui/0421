@@ -1,5 +1,6 @@
 let capture;
 let pg; // 宣告繪圖層變數
+let bubbles = []; // 存放泡泡數據的陣列
 
 function setup() {
   // 1. 產生一個全螢幕的畫布
@@ -12,6 +13,16 @@ function setup() {
 
   // 產生一個與顯示視訊畫面寬高一樣的繪圖層 (畫布寬高的 60%)
   pg = createGraphics(windowWidth * 0.6, windowHeight * 0.6);
+
+  // 初始化泡泡數據
+  for (let i = 0; i < 40; i++) {
+    bubbles.push({
+      x: random(pg.width),
+      y: random(pg.height),
+      r: random(4, 12),
+      speed: random(1, 3)
+    });
+  }
 }
 
 function draw() {
@@ -35,6 +46,24 @@ function draw() {
 
   // 在繪圖層 (pg) 上繪製內容 (範例：畫出一個紅色外框與文字)
   pg.clear(); // 確保背景透明，只顯示畫上去的內容
+
+  // 繪製並更新泡泡效果
+  pg.noFill();
+  pg.stroke(255, 255, 255, 180); // 白色半透明
+  pg.strokeWeight(1.5);
+  for (let b of bubbles) {
+    pg.circle(b.x, b.y, b.r * 2);
+    b.y -= b.speed; // 向上飄動
+    // 加入一點左右隨機晃動的感感
+    b.x += sin(frameCount * 0.05 + b.r) * 0.5;
+
+    // 如果泡泡完全飄出上方邊界，則重置到下方重新開始
+    if (b.y < -b.r * 2) {
+      b.y = pg.height + b.r * 2;
+      b.x = random(pg.width);
+    }
+  }
+
   pg.stroke(255, 0, 0);
   pg.strokeWeight(5);
   pg.noFill();
