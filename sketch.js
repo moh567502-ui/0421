@@ -1,9 +1,9 @@
 let capture;
 let pg; // 宣告繪圖層變數
-let bubbles = []; // 存放泡泡數據的陣列
-let bows = [];    // 存放蝴蝶結數據
+let snowflakes = []; // 存放雪花數據的陣列
+let bubbles = [];   // 存放泡泡數據的陣列
 let hearts = [];  // 存放愛心數據
-let filterMode = 0; // 0: 泡泡, 1: 蝴蝶結, 2: 愛心
+let filterMode = 0; // 0: 泡泡, 1: 雪花, 2: 愛心
 let flashAlpha = 0; // 閃光燈透明度
 let btnFlash, btnFilter, btnSave; // 按鈕變數
 
@@ -26,27 +26,34 @@ function setup() {
   pg = createGraphics(vW, vH);
 
   // 初始化三種濾鏡的粒子數據
-  for (let i = 0; i < 40; i++) {
-    // 泡泡
+  for (let i = 0; i < 25; i++) {
+    // 雪花 (取代原本的泡泡)
+    snowflakes.push({
+      x: random(pg.width),
+      y: random(pg.height),
+      size: random(10, 22),
+      speed: random(0.8, 2),
+      angle: random(TWO_PI),
+      spin: random(-0.02, 0.02)
+    });
+  }
+
+  // 初始化泡泡數據
+  for (let i = 0; i < 30; i++) {
     bubbles.push({
       x: random(pg.width),
       y: random(pg.height),
-      r: random(4, 12),
-      speed: random(1, 3)
+      r: random(5, 15),
+      speed: random(1, 2.5)
     });
-    // 蝴蝶結
-    bows.push({
-      x: random(pg.width),
-      y: random(pg.height),
-      size: random(0.4, 0.8),
-      speed: random(0.5, 1.5),
-      sway: random(0.02, 0.05)
-    });
-    // 愛心
+  }
+
+  // 初始化愛心數據 (數量減少)
+  for (let i = 0; i < 15; i++) {
     hearts.push({
       x: random(pg.width),
       y: random(pg.height),
-      size: random(15, 30),
+      size: random(18, 32),
       speed: random(1, 2),
       sway: random(0.03, 0.08)
     });
@@ -125,28 +132,27 @@ function draw() {
 
   // 根據 filterMode 切換不同的濾鏡效果
   if (filterMode === 0) {
-    // 濾鏡 0: 玻璃泡泡
+    // 濾鏡 0: 立體玻璃泡泡 (向上飄動)
     for (let b of bubbles) {
-      pg.fill(255, 255, 255, 40);
-      pg.stroke(255, 255, 255, 120);
-      pg.strokeWeight(0.5);
-      pg.circle(b.x, b.y, b.r * 2);
-      pg.noStroke();
-      pg.fill(255, 255, 255, 220);
-      pg.ellipse(b.x - b.r * 0.4, b.y - b.r * 0.4, b.r * 0.6, b.r * 0.4);
-      pg.fill(255, 255, 255, 60);
-      pg.ellipse(b.x + b.r * 0.3, b.y + b.r * 0.3, b.r * 0.4, b.r * 0.4);
+      drawGlassBubble(pg, b.x, b.y, b.r);
       b.y -= b.speed;
-      b.x += sin(frameCount * 0.05 + b.r) * 0.5;
-      if (b.y < -b.r * 2) { b.y = pg.height + b.r * 2; b.x = random(pg.width); }
+      b.x += sin(frameCount * 0.03 + b.r) * 0.5;
+      if (b.y < -b.r * 2) { 
+        b.y = pg.height + b.r * 2; 
+        b.x = random(pg.width); 
+      }
     }
   } else if (filterMode === 1) {
-    // 濾鏡 1: 緞帶蝴蝶結 (動態飄動)
-    for (let bw of bows) {
-      drawRibbonBow(pg, bw.x, bw.y, bw.size);
-      bw.y -= bw.speed;
-      bw.x += sin(frameCount * bw.sway) * 0.8;
-      if (bw.y < -50) { bw.y = pg.height + 50; bw.x = random(pg.width); }
+    // 濾鏡 1: 立體玻璃雪花 (向下飄落) - 取代蝴蝶結
+    for (let s of snowflakes) {
+      drawGlassSnowflake(pg, s.x, s.y, s.size, s.angle);
+      s.y += s.speed;
+      s.angle += s.spin;
+      s.x += sin(frameCount * 0.02 + s.size) * 0.5;
+      if (s.y > pg.height + s.size) { 
+        s.y = -s.size; 
+        s.x = random(pg.width); 
+      }
     }
   } else if (filterMode === 2) {
     // 濾鏡 2: 立體愛心 (動態飄動)
@@ -170,30 +176,61 @@ function draw() {
   }
 }
 
+// 繪製立體玻璃雪花的輔助函式
+function drawGlassSnowflake(p, x, y, size, angle) {
+  p.push();
+  p.translate(x, y);
+  p.rotate(angle);
+  
+  // 玻璃主體：半透明白色描邊
+  p.stroke(255, 255, 255, 110);
+  p.strokeWeight(size * 0.08);
+  p.noFill();
+  
+  for (let i = 0; i < 6; i++) {
+    p.rotate(PI / 3);
+    // 雪花主幹
+    p.line(0, 0, 0, -size);
+    // 雪花分支
+    p.line(0, -size * 0.5, -size * 0.3, -size * 0.7);
+    p.line(0, -size * 0.5, size * 0.3, -size * 0.7);
+    
+    // 3D 高光效果 (側邊亮線)
+    p.stroke(255, 255, 255, 200);
+    p.strokeWeight(size * 0.02);
+    p.line(size * 0.04, -size * 0.1, size * 0.04, -size * 0.9);
+  }
+  
+  // 中心亮點點綴
+  p.noStroke();
+  p.fill(255, 255, 255, 180);
+  p.circle(0, 0, size * 0.2);
+  p.pop();
+}
+
 // 繪製立體愛心的輔助函式
 function draw3DHeart(p, x, y, size) {
   p.push();
   p.translate(x, y);
   p.noStroke();
   
-  // 1. 底層極淺紫色玻璃光澤與細緻輪廓
-  p.stroke(255, 255, 255, 100);
-  p.strokeWeight(0.5);
-  p.fill(230, 210, 255, 80);
+  // 1. 底層透亮粉紫色玻璃光澤 (不描框)
+  p.noStroke();
+  p.fill(240, 180, 255, 90); // 透亮的粉紫色
   renderHeartShape(p, size * 1.1);
 
   // 2. 中層折射感 (內部微光)
   p.push();
   p.noStroke();
   p.translate(0, -size * 0.1);
-  p.fill(245, 235, 255, 150);
+  p.fill(250, 220, 255, 160);
   renderHeartShape(p, size * 0.9);
   p.pop();
   
-  // 3. 銳利玻璃高光
+  // 3. 銳利玻璃高光 (模擬光線折射)
   p.noStroke();
   p.fill(255, 255, 255, 200);
-  p.ellipse(-size * 0.3, -size * 0.3, size * 0.5, size * 0.25);
+  p.ellipse(-size * 0.4, -size * 0.3, size * 0.7, size * 0.35);
   
   // 底部微弱反光
   p.fill(255, 255, 255, 60);
@@ -201,57 +238,28 @@ function draw3DHeart(p, x, y, size) {
   p.pop();
 }
 
+// 繪製玻璃泡泡的輔助函式
+function drawGlassBubble(p, x, y, r) {
+  p.push();
+  p.translate(x, y);
+  p.fill(255, 255, 255, 45);
+  p.stroke(255, 255, 255, 100);
+  p.strokeWeight(1);
+  p.circle(0, 0, r * 2);
+  
+  p.noStroke();
+  p.fill(255, 255, 255, 180);
+  p.ellipse(-r * 0.4, -r * 0.4, r * 0.7, r * 0.4); // 高光
+  p.pop();
+}
+
 function renderHeartShape(p, size) {
   p.beginShape();
   p.vertex(0, 0);
-  // 調整貝茲曲線參數，讓愛心變得更寬飽滿
-  p.bezierVertex(-size * 0.7, -size * 0.6, -size * 1.4, size * 0.4, 0, size);
-  p.bezierVertex(size * 1.4, size * 0.4, size * 0.7, -size * 0.6, 0, 0);
+  // 調整貝茲參數，使頂部更圓、整體更飽滿寬闊
+  p.bezierVertex(-size * 1.2, -size * 1.0, -size * 2.2, size * 0.5, 0, size);
+  p.bezierVertex(size * 2.2, size * 0.5, size * 1.2, -size * 1.0, 0, 0);
   p.endShape(CLOSE);
-}
-
-// 繪製緞帶蝴蝶結的輔助函式
-function drawRibbonBow(p, x, y, s) {
-  p.push();
-  p.translate(x, y);
-  p.scale(s);
-
-  // 極淡紫色玻璃感配色
-  let glassColor = color(243, 229, 245, 120); // 非常淡的紫色
-  let highlightColor = color(255, 255, 255, 200);
-  let edgeColor = color(224, 170, 255, 150);
-
-  // 1. 繪製蝴蝶結兩側的透明玻璃球體環
-  p.stroke(edgeColor);
-  p.strokeWeight(0.5);
-  p.fill(glassColor);
-  p.beginShape();
-  p.vertex(0, 0);
-  p.bezierVertex(-60, -60, -80, 40, 0, 0); // 左側飽滿感
-  p.bezierVertex(60, -60, 80, 40, 0, 0);  // 右側飽滿感
-  p.endShape(CLOSE);
-
-  // 2. 移除原本的緞帶尾巴，改用對稱的玻璃垂墜片 (不生硬的玻璃感)
-  p.beginShape();
-  p.vertex(-5, 5);
-  p.bezierVertex(-20, 10, -35, 30, -30, 50);
-  p.bezierVertex(-20, 45, -5, 20, -5, 5);
-  p.vertex(5, 5);
-  p.bezierVertex(20, 10, 35, 30, 30, 50);
-  p.bezierVertex(20, 45, 5, 20, 5, 5);
-  p.endShape(CLOSE);
-
-  // 3. 頂層高光與亮點 (增加精緻度)
-  p.noStroke();
-  p.fill(highlightColor);
-  p.ellipse(-35, -25, 25, 12); // 左高光
-  p.ellipse(35, -25, 25, 12);  // 右高光
-  p.circle(0, -5, 10);        // 中心微光
-  
-  // 4. 中間圓潤結點
-  p.fill(edgeColor);
-  p.ellipse(0, 0, 20, 18);
-  p.pop();
 }
 
 function windowResized() {
