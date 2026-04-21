@@ -1,6 +1,8 @@
 let capture;
 let pg; // 宣告繪圖層變數
 let bubbles = []; // 存放泡泡數據的陣列
+let bows = [];    // 存放蝴蝶結數據
+let hearts = [];  // 存放愛心數據
 let filterMode = 0; // 0: 泡泡, 1: 蝴蝶結, 2: 愛心
 let flashAlpha = 0; // 閃光燈透明度
 let btnFlash, btnFilter, btnSave; // 按鈕變數
@@ -23,24 +25,44 @@ function setup() {
   }
   pg = createGraphics(vW, vH);
 
-  // 初始化泡泡數據
+  // 初始化三種濾鏡的粒子數據
   for (let i = 0; i < 40; i++) {
+    // 泡泡
     bubbles.push({
       x: random(pg.width),
       y: random(pg.height),
       r: random(4, 12),
       speed: random(1, 3)
     });
+    // 蝴蝶結
+    bows.push({
+      x: random(pg.width),
+      y: random(pg.height),
+      size: random(0.4, 0.8),
+      speed: random(0.5, 1.5),
+      sway: random(0.02, 0.05)
+    });
+    // 愛心
+    hearts.push({
+      x: random(pg.width),
+      y: random(pg.height),
+      size: random(15, 30),
+      speed: random(1, 2),
+      sway: random(0.03, 0.08)
+    });
   }
 
   // 建立按鈕
   btnFlash = createButton('閃光');
+  btnFlash.class('p5-button btn-flash');
   btnFlash.mousePressed(() => flashAlpha = 255);
   
   btnFilter = createButton('切換濾鏡');
+  btnFilter.class('p5-button btn-filter');
   btnFilter.mousePressed(() => filterMode = (filterMode + 1) % 3);
   
   btnSave = createButton('儲存圖片');
+  btnSave.class('p5-button btn-save');
   btnSave.mousePressed(() => saveCanvas('my_snapshot', 'png'));
 
   updateButtonPositions();
@@ -119,24 +141,20 @@ function draw() {
       if (b.y < -b.r * 2) { b.y = pg.height + b.r * 2; b.x = random(pg.width); }
     }
   } else if (filterMode === 1) {
-    // 濾鏡 1: 蝴蝶結 (繪製在上方大約頭部的位置)
-    pg.push();
-    pg.translate(pg.width / 2, pg.height * 0.25);
-    pg.noStroke();
-    pg.fill('#ffc8dd'); // 粉紅色
-    pg.triangle(0, 0, -60, -40, -60, 40); // 左翼
-    pg.triangle(0, 0, 60, -40, 60, 40);  // 右翼
-    pg.fill('#ffafcc');
-    pg.circle(0, 0, 25); // 中間的結
-    pg.pop();
+    // 濾鏡 1: 緞帶蝴蝶結 (動態飄動)
+    for (let bw of bows) {
+      drawRibbonBow(pg, bw.x, bw.y, bw.size);
+      bw.y -= bw.speed;
+      bw.x += sin(frameCount * bw.sway) * 0.8;
+      if (bw.y < -50) { bw.y = pg.height + 50; bw.x = random(pg.width); }
+    }
   } else if (filterMode === 2) {
-    // 濾鏡 2: 愛心飄浮
-    pg.noStroke();
-    pg.fill(255, 100, 100, 150);
-    for (let i = 0; i < 6; i++) {
-      let hX = (frameCount * 1.5 + i * 100) % pg.width;
-      let hY = (pg.height - (frameCount * 2 + i * 120) % pg.height);
-      drawHeart(pg, hX, hY, 15);
+    // 濾鏡 2: 立體愛心 (動態飄動)
+    for (let h of hearts) {
+      draw3DHeart(pg, h.x, h.y, h.size);
+      h.y -= h.speed;
+      h.x += cos(frameCount * h.sway) * 1.2;
+      if (h.y < -h.size) { h.y = pg.height + h.size; h.x = random(pg.width); }
     }
   }
 
@@ -152,15 +170,67 @@ function draw() {
   }
 }
 
-// 繪製愛心的輔助函式
-function drawHeart(p, x, y, size) {
+// 繪製立體愛心的輔助函式
+function draw3DHeart(p, x, y, size) {
   p.push();
   p.translate(x, y);
+  p.noStroke();
+  
+  // 底層陰影/深色
+  p.fill(200, 50, 50, 200);
+  renderHeartShape(p, size);
+  
+  // 中層主色
+  p.push();
+  p.translate(0, -size * 0.1);
+  p.fill(255, 100, 100, 220);
+  renderHeartShape(p, size * 0.9);
+  p.pop();
+  
+  // 頂層高光
+  p.fill(255, 200, 200, 180);
+  p.ellipse(-size * 0.2, -size * 0.2, size * 0.4, size * 0.2);
+  p.pop();
+}
+
+function renderHeartShape(p, size) {
   p.beginShape();
   p.vertex(0, 0);
   p.bezierVertex(-size/2, -size/2, -size, size/3, 0, size);
   p.bezierVertex(size, size/3, size/2, -size/2, 0, 0);
+  p.endShape(CLOSE);
+}
+
+// 繪製緞帶蝴蝶結的輔助函式
+function drawRibbonBow(p, x, y, s) {
+  p.push();
+  p.translate(x, y);
+  p.scale(s);
+  p.noStroke();
+  
+  // 緞帶顏色
+  let c1 = color('#ffafcc');
+  let c2 = color('#fb6f92');
+  
+  // 繪製兩側的環 (Loops)
+  p.fill(c1);
+  p.beginShape();
+  p.vertex(0, 0);
+  p.bezierVertex(-50, -40, -60, 20, 0, 0); // 左環
+  p.bezierVertex(50, -40, 60, 20, 0, 0);  // 右環
   p.endShape();
+  
+  // 繪製下垂的帶子 (Tails)
+  p.stroke(c2);
+  p.strokeWeight(8);
+  p.noFill();
+  p.bezier(0, 0, -10, 20, -30, 10, -40, 40); // 左尾
+  p.bezier(0, 0, 10, 20, 30, 10, 40, 40);  // 右尾
+  
+  // 中間的結
+  p.noStroke();
+  p.fill(c2);
+  p.ellipse(0, 0, 15, 12);
   p.pop();
 }
 

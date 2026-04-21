@@ -6,3 +6,44 @@ html, body {
 canvas {
   display: block;
 }
+
+/* 通用按鈕樣式 - 建立立體感 */
+.p5-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.1s;
+  outline: none;
+  font-family: sans-serif;
+}
+
+/* 按下時的縮放與位移效果，模擬真實按鍵 */
+.p5-button:active {
+  transform: translateY(4px);
+  box-shadow: 0 0px #666 !important;
+}
+
+/* 閃光按鈕 - 暖色調漸層 */
+.btn-flash {
+  background: linear-gradient(to bottom, #ffca3a, #ff9f1c);
+  box-shadow: 0 6px #cc8400;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* 濾鏡按鈕 - 夢幻粉紫漸層 */
+.btn-filter {
+  background: linear-gradient(to bottom, #ff8fab, #fb6f92);
+  box-shadow: 0 6px #c94c6d;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
+
+/* 儲存按鈕 - 酷炫藍綠漸層 */
+.btn-save {
+  background: linear-gradient(to bottom, #4cc9f0, #4361ee);
+  box-shadow: 0 6px #2b3bb5;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+}
