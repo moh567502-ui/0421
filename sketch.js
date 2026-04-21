@@ -1,6 +1,9 @@
 let capture;
 let pg; // 宣告繪圖層變數
 let bubbles = []; // 存放泡泡數據的陣列
+let filterMode = 0; // 0: 泡泡, 1: 蝴蝶結, 2: 愛心
+let flashAlpha = 0; // 閃光燈透明度
+let btnFlash, btnFilter; // 按鈕變數
 
 function setup() {
   // 1. 產生一個全螢幕的畫布
@@ -29,6 +32,23 @@ function setup() {
       speed: random(1, 3)
     });
   }
+
+  // 建立按鈕
+  btnFlash = createButton('閃光');
+  btnFlash.mousePressed(() => flashAlpha = 255);
+  
+  btnFilter = createButton('切換濾鏡');
+  btnFilter.mousePressed(() => filterMode = (filterMode + 1) % 3);
+  
+  updateButtonPositions();
+}
+
+function updateButtonPositions() {
+  // 計算按鈕位置，置於手機畫面下方
+  let vH = height * 0.7;
+  let y = (height - vH) / 2;
+  btnFlash.position(width / 2 - 60, y + vH + 20);
+  btnFilter.position(width / 2 + 10, y + vH + 20);
 }
 
 function draw() {
@@ -121,4 +141,5 @@ function windowResized() {
     vH = vW * (16 / 9);
   }
   pg.resizeCanvas(vW, vH);
+  updateButtonPositions();
 }
