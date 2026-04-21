@@ -176,20 +176,24 @@ function draw3DHeart(p, x, y, size) {
   p.translate(x, y);
   p.noStroke();
   
-  // 底層陰影/深色
-  p.fill(200, 50, 50, 200);
-  renderHeartShape(p, size);
-  
-  // 中層主色
+  // 1. 底層淡紫色玻璃光澤
+  p.fill(200, 160, 255, 120);
+  renderHeartShape(p, size * 1.1);
+
+  // 2. 中層主體 (淡紫色)
   p.push();
   p.translate(0, -size * 0.1);
-  p.fill(255, 100, 100, 220);
+  p.fill(230, 200, 255, 180);
   renderHeartShape(p, size * 0.9);
   p.pop();
   
-  // 頂層高光
-  p.fill(255, 200, 200, 180);
+  // 3. 玻璃高光點
+  p.fill(255, 255, 255, 200);
   p.ellipse(-size * 0.2, -size * 0.2, size * 0.4, size * 0.2);
+  
+  // 底部微弱反光
+  p.fill(255, 255, 255, 60);
+  p.ellipse(size * 0.1, size * 0.3, size * 0.3, size * 0.15);
   p.pop();
 }
 
@@ -208,21 +212,27 @@ function drawRibbonBow(p, x, y, s) {
   p.scale(s);
   p.noStroke();
   
-  // 緞帶顏色
-  let c1 = color('#ffafcc');
-  let c2 = color('#fb6f92');
+  // 粉紫色系顏色
+  let c1 = color('#e0aaff'); // 淺粉紫
+  let c2 = color('#c77dff'); // 主粉紫
+  let c3 = color('#9d4edd'); // 深粉紫
   
   // 繪製兩側的環 (Loops)
   p.fill(c1);
   p.beginShape();
   p.vertex(0, 0);
-  p.bezierVertex(-50, -40, -60, 20, 0, 0); // 左環
-  p.bezierVertex(50, -40, 60, 20, 0, 0);  // 右環
+  p.bezierVertex(-60, -50, -70, 30, 0, 0); // 左環加大
+  p.bezierVertex(60, -50, 70, 30, 0, 0);  // 右環加大
   p.endShape();
+
+  // 增加環上的可愛小亮點
+  p.fill(255, 255, 255, 150);
+  p.circle(-35, -15, 8);
+  p.circle(35, -15, 8);
   
   // 繪製下垂的帶子 (Tails)
-  p.stroke(c2);
-  p.strokeWeight(8);
+  p.stroke(c3);
+  p.strokeWeight(10);
   p.noFill();
   p.bezier(0, 0, -10, 20, -30, 10, -40, 40); // 左尾
   p.bezier(0, 0, 10, 20, 30, 10, 40, 40);  // 右尾
