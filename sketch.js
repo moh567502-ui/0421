@@ -3,7 +3,7 @@ let pg; // 宣告繪圖層變數
 let bubbles = []; // 存放泡泡數據的陣列
 let filterMode = 0; // 0: 泡泡, 1: 蝴蝶結, 2: 愛心
 let flashAlpha = 0; // 閃光燈透明度
-let btnFlash, btnFilter; // 按鈕變數
+let btnFlash, btnFilter, btnSave; // 按鈕變數
 
 function setup() {
   // 1. 產生一個全螢幕的畫布
@@ -40,15 +40,19 @@ function setup() {
   btnFilter = createButton('切換濾鏡');
   btnFilter.mousePressed(() => filterMode = (filterMode + 1) % 3);
   
+  btnSave = createButton('儲存圖片');
+  btnSave.mousePressed(() => saveCanvas('my_snapshot', 'png'));
+
   updateButtonPositions();
 }
 
 function updateButtonPositions() {
-  // 計算按鈕位置，置於手機畫面下方
+  // 計算按鈕位置，置於手機畫面正下方
   let vH = height * 0.7;
   let y = (height - vH) / 2;
-  btnFlash.position(width / 2 - 60, y + vH + 20);
-  btnFilter.position(width / 2 + 10, y + vH + 20);
+  btnFlash.position(width / 2 - 110, y + vH + 20);
+  btnFilter.position(width / 2 - 40, y + vH + 20);
+  btnSave.position(width / 2 + 50, y + vH + 20);
 }
 
 function draw() {
@@ -97,37 +101,67 @@ function draw() {
   // 在繪圖層 (pg) 上繪製內容 (範例：畫出一個紅色外框與文字)
   pg.clear(); // 確保背景透明，只顯示畫上去的內容
 
-  // 繪製並更新泡泡效果
-  for (let b of bubbles) {
-    // 1. 泡泡球體主體：淡白色填充增加玻璃通透感
-    pg.fill(255, 255, 255, 40);
-    pg.stroke(255, 255, 255, 120);
-    pg.strokeWeight(0.5);
-    pg.circle(b.x, b.y, b.r * 2);
-
-    // 2. 玻璃高光 (Specular Highlight)：在左上方繪製一個微型橢圓，模擬光源反射
+  // 根據 filterMode 切換不同的濾鏡效果
+  if (filterMode === 0) {
+    // 濾鏡 0: 玻璃泡泡
+    for (let b of bubbles) {
+      pg.fill(255, 255, 255, 40);
+      pg.stroke(255, 255, 255, 120);
+      pg.strokeWeight(0.5);
+      pg.circle(b.x, b.y, b.r * 2);
+      pg.noStroke();
+      pg.fill(255, 255, 255, 220);
+      pg.ellipse(b.x - b.r * 0.4, b.y - b.r * 0.4, b.r * 0.6, b.r * 0.4);
+      pg.fill(255, 255, 255, 60);
+      pg.ellipse(b.x + b.r * 0.3, b.y + b.r * 0.3, b.r * 0.4, b.r * 0.4);
+      b.y -= b.speed;
+      b.x += sin(frameCount * 0.05 + b.r) * 0.5;
+      if (b.y < -b.r * 2) { b.y = pg.height + b.r * 2; b.x = random(pg.width); }
+    }
+  } else if (filterMode === 1) {
+    // 濾鏡 1: 蝴蝶結 (繪製在上方大約頭部的位置)
+    pg.push();
+    pg.translate(pg.width / 2, pg.height * 0.25);
     pg.noStroke();
-    pg.fill(255, 255, 255, 220);
-    pg.ellipse(b.x - b.r * 0.4, b.y - b.r * 0.4, b.r * 0.6, b.r * 0.4);
-
-    // 3. 底部微弱反光：增加球體的立體厚度感
-    pg.fill(255, 255, 255, 60);
-    pg.ellipse(b.x + b.r * 0.3, b.y + b.r * 0.3, b.r * 0.4, b.r * 0.4);
-
-    // 更新物理運動
-    b.y -= b.speed; // 向上飄動
-    // 加入一點左右隨機晃動的感感
-    b.x += sin(frameCount * 0.05 + b.r) * 0.5;
-
-    // 如果泡泡完全飄出上方邊界，則重置到下方重新開始
-    if (b.y < -b.r * 2) {
-      b.y = pg.height + b.r * 2;
-      b.x = random(pg.width);
+    pg.fill('#ffc8dd'); // 粉紅色
+    pg.triangle(0, 0, -60, -40, -60, 40); // 左翼
+    pg.triangle(0, 0, 60, -40, 60, 40);  // 右翼
+    pg.fill('#ffafcc');
+    pg.circle(0, 0, 25); // 中間的結
+    pg.pop();
+  } else if (filterMode === 2) {
+    // 濾鏡 2: 愛心飄浮
+    pg.noStroke();
+    pg.fill(255, 100, 100, 150);
+    for (let i = 0; i < 6; i++) {
+      let hX = (frameCount * 1.5 + i * 100) % pg.width;
+      let hY = (pg.height - (frameCount * 2 + i * 120) % pg.height);
+      drawHeart(pg, hX, hY, 15);
     }
   }
 
   // 將此繪圖層顯示在視訊畫面的上方 (疊加在畫布中間)
   image(pg, x, y, vW, vH);
+
+  // 繪製閃光燈效果：當按下閃光鈕，產生一個瞬間的白色覆蓋層並淡出
+  if (flashAlpha > 0) {
+    noStroke();
+    fill(255, 255, 255, flashAlpha);
+    rect(0, 0, width, height);
+    flashAlpha -= 15; // 逐漸淡出速度
+  }
+}
+
+// 繪製愛心的輔助函式
+function drawHeart(p, x, y, size) {
+  p.push();
+  p.translate(x, y);
+  p.beginShape();
+  p.vertex(0, 0);
+  p.bezierVertex(-size/2, -size/2, -size, size/3, 0, size);
+  p.bezierVertex(size, size/3, size/2, -size/2, 0, 0);
+  p.endShape();
+  p.pop();
 }
 
 function windowResized() {
